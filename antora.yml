@@ -1,6 +1,5 @@
 name: workflow
 version: "5.5.3"
-prerelease: true
 title: Управление процессами
 asciidoc:
   attributes:
