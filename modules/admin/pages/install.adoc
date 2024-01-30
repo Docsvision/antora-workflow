@@ -41,7 +41,7 @@ include::dev@platform:admin:partial$install.adoc[]
 <.> Имя системной учётной записи {dv}.
 <.> Пароль системной УЗ, рекомендуется хранить в зашифрованном виде, см. подробнее в документации по установке системы, раздел "xref:dev@install-linux::account-protection.adoc[]".
 +
-include::6.1@platform:ROOT:partial$excerpts.adoc[tags=system-accounts]
+include::dev@platform:ROOT:partial$excerpts.adoc[tags=system-accounts]
 +
 <.> Используется для аутентификации в API {wf}. Можно оставить значение по умолчанию или изменить, главное условие, чтобы значения в конфигурации модулей {pl} и {wf} были одинаковые.
 --
