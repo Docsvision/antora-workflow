@@ -1,4 +1,4 @@
-:update: workflow-*
+:update: workflow
 
 = Обновление модуля
 
