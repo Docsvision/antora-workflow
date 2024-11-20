@@ -1,4 +1,4 @@
-:page-aliases: /functions/basic/counter.adoc
+:page-aliases: /functions/basic/сounter.adoc
 
 = Счетчик
 
