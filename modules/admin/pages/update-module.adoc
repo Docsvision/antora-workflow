@@ -16,6 +16,8 @@ include::webclient:ROOT:partial$excerpts.adoc[tags=what-changed]
 +
 . На последней странице мастера установки установите флаг `*Обновить базу данных*` и нажмите *Готово*.
 +
+include::system:ROOT:partial$excerpts.adoc[tags=update-mode]
++
 .Флаг "Обновить базу данных"
 image::update-db.png[Флаг "Обновить базу данных"]
 +
