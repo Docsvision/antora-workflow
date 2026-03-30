@@ -5,7 +5,6 @@ prerelease: true
 title: Управление процессами
 asciidoc:
   attributes:
-    dotnet: '4.6.1'
     pl-req: '6.1'
     bo-req: '6.1'
     dm-req: '6.1'
@@ -16,6 +15,9 @@ asciidoc:
     ms-req-2: '2013'
     ms-req-3: '2016'
     is-service: ''
+    wf-mg: '6.1, сборка ???'
+    config: '`/usr/lib/docsvision/workflow/appsettings.json` для Linux и `C:\Program Files\Docsvision\Workflow\appsettings.json` для Windows@'
+    wfs-new: '*dvworkflow* для Linux и *{wfs-win}* для Windows@'
 
 nav:
 - modules/ROOT/nav.adoc
