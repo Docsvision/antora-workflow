@@ -8,7 +8,7 @@
 
 include::partial$mancons.adoc[]
 
-Журнал находится по адресу, указанному в конфигурационном файле модуля `Каталог-установки-модуля-{wf}/appsettings.json` для Linux, в параметре `menu:DocsVision[Workflow > WorkflowServer]`.
+При использовании прежнего журналирования журнал находится по адресу, указанному в конфигурационном файле модуля `Каталог-установки-модуля-{wf}/appsettings.json` для Linux, в параметре `menu:DocsVision[Workflow > WorkflowServer]`. Для перехода на JSON и настройки нового журналирования см. раздел "xref:log.adoc#config[Настройка журналирования]".
 
 :module-service: Workflow
 include::6.1@webclient:admin:partial$excerpts.adoc[tags=no-rights]
