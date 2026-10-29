@@ -1,7 +1,12 @@
 :update: workflow
 :installer: {dv} Workflow server.msi
+:mod-log-req: {wf-log-req}
+:mod: службы модуля {wf}
+:link: workflow:admin:log
 
 = Обновление модуля
+
+include::GBL-3610@engineer:ROOT:partial$excerpts.adoc[tags=update-log]
 
 include::webclient:ROOT:partial$excerpts.adoc[tags=what-changed]
 

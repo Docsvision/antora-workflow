@@ -1,15 +1,16 @@
-= Работа с журналом сообщений сервиса Workflow
+:of-what: сервиса Workflow
+:version: {new-log-req}
+:module-service: Workflow
 
-Журнал сообщений сервиса Workflow предназначен для просмотра данных по обработке функций сервисом. Настройка журналирования описана в разделе "<<config,Настройка журналирования>>".
+= Журналирование сервиса Workflow
 
-При обновлении без замены конфигурационного файла сохраняются прежний формат и настройки журналирования, описанные в разделе "xref:bp-management.adoc[]". Для перехода на JSON примените секцию `NLog` из конфигурационного файла новой поставки модуля, сохранив остальные настройки.
+include::GBL-3610@engineer:ROOT:partial$excerpts.adoc[tags=nlog-json]
 
 [#view]
 == Просмотр сообщений журнала
 
-В новой конфигурации сообщения записываются в формате JSON: одна строка соответствует одному событию. Файловый и консольный журналы используют одинаковый формат.
+Журнал сообщений сервиса Workflow предназначен для просмотра данных по обработке функций сервисом.
 
-:module-service: Workflow
 include::6.1@webclient:admin:partial$excerpts.adoc[tags=no-rights]
 
 .По умолчанию файлы журналов находятся в каталогах:
@@ -20,29 +21,158 @@ include::6.1@webclient:admin:partial$excerpts.adoc[tags=no-rights]
 
 Для анализа сообщений конкретного процесса используйте поле `processId`, а для выбора базы данных -- поле `dataBase`. Поле `dataBase` присутствует, если для события известен псевдоним базы данных. Общие поля записи: `timestamp` -- время события, `level` -- уровень, `module` -- имя модуля или логгера, `message` -- сообщение, `processId` -- идентификатор процесса.
 
-Консольный журнал выводится в stdout процесса. В Linux сообщения службы можно просмотреть в системном журнале, в контейнере -- средствами сбора журналов контейнеров.
+Консольный журнал выводится в stdout процесса. В Linux сообщения службы можно просмотреть в системном журнале командой:
+
+[source,shell]
+----
+sudo journalctl -u dvworkflow -o cat
+----
 
 [#config]
 == Настройка журналирования
+
+При обновлении без замены конфигурационного файла сохраняются прежний формат и настройки журналирования, описанные в разделе "xref:bp-management.adoc[]". Для перехода на JSON примените секцию `NLog` из конфигурационного файла новой поставки модуля, сохранив остальные настройки.
 
 .Чтобы изменить настройки:
 . {blank}
 +
 [subs="specialchars,attributes,quotes"]
-Отредактируйте секцию `NLog` в конфигурационном файле модуля по адресу {config-wf}.
+Откройте конфигурационный файл модуля по адресу {config-wf}.
 +
-. В разделе `NLog.variables` задайте необходимые параметры:
+. Измените параметры журналирования в секции `NLog`:
 +
-* `fileLogLevel` -- задаёт уровень журналирования для файла журнала.
-* `consoleLogLevel` -- задаёт уровень журналирования для консоли (stdout/stderr).
-* `enableFileLogging` -- включает или отключает ведение журнала в файл.
-* `enableConsoleLogging` -- включает или отключает ведение журнала в консоль (stdout/stderr).
+.Фрагмент конфигурационного файла Workflow:
+[source,json]
+----
+{
+  "NLog": {
+    "throwConfigExceptions": false, <.>
+    "extensions": [ <.>
+      { "assembly": "NLog.Extensions.Logging" },
+      { "assembly": "NLog.Web.AspNetCore" }
+    ],
+    "variables": { <.>
+      "fileLogLevel": "Error", <.>
+      "consoleLogLevel": "Error", <.>
+      "enableFileLogging": "true", <.>
+      "enableConsoleLogging": "true", <.>
+      "jsonLayout": { <.>
+        "type": "JsonLayout", <.>
+        "includeAllProperties": true, <.>
+        "attributes": [ <.>
+          {
+            "name": "timestamp", <.>
+            "layout": "${date:format=yyyy-MM-dd HH\\:mm\\:ss.fff}" <.>
+          },
+          {
+            "name": "level",
+            "layout": "${level:upperCase=true}"
+          },
+          {
+            "name": "module",
+            "layout": "${logger}"
+          },
+          {
+            "name": "message",
+            "layout": "${message}"
+          },
+          {
+            "name": "processId",
+            "layout": "${processid}"
+          },
+          {
+            "name": "dataBase", <.>
+            "layout": "${gdc:dataBase}", <.>
+            "includeEmptyValue": false <.>
+          }
+        ]
+      }
+    },
+    "targets": { <.>
+      "async": true, <.>
+      "logFile": { <.>
+        "type": "File", <.>
+        "fileName": "${gdc:docsvisionLogFolder}/${gdc:moduleName}/${gdc:moduleName}_${gdc:processBits}.log", <.>
+        "layout": "${var:jsonLayout}", <.>
+        "concurrentWrites": true, <.>
+        "archiveEvery": "Day", <.>
+        "archiveAboveSize": 314572800, <.>
+        "archiveFileName": "${gdc:docsvisionLogFolder}/${gdc:moduleName}/archives/${gdc:moduleName}_{#}_${gdc:processBits}.log", <.>
+        "archiveNumbering": "DateAndSequence", <.>
+        "archiveDateFormat": "yyyy-MM-dd", <.>
+        "maxArchiveFiles": 30, <.>
+        "createDirs": true <.>
+      },
+      "logConsole": { <.>
+        "type": "Console",
+        "layout": "${var:jsonLayout}"
+      }
+    },
+    "rules": [ <.>
+      {
+        "logger": "Microsoft.*",
+        "maxLevel": "Warn",
+        "final": true
+      },
+      {
+        "logger": "*",
+        "minLevel": "${when:when='${var:enableFileLogging:lowercase=true}' == 'true':inner=${var:fileLogLevel}:else=Off}",
+        "writeTo": "logFile"
+      },
+      {
+        "logger": "*",
+        "minLevel": "${when:when='${var:enableConsoleLogging:lowercase=true}' == 'true':inner=${var:consoleLogLevel}:else=Off}",
+        "writeTo": "logConsole"
+      }
+    ]
+  }
+}
+----
+<.> `throwConfigExceptions` -- определяет поведение приложения при обнаружении ошибок в конфигурации NLog.
++
+Если параметр установлен в `true`, любая ошибка в конфигурации вызовет исключение.
++
+<.> `extensions` -- загружает дополнительные сборки (`.dll`), расширяющие возможности NLog.
+<.> `variables` -- раздел определяет параметры, которые используются в других частях конфигурации.
+<.> `fileLogLevel` -- задаёт уровень журналирования для файла журнала.
+<.> `consoleLogLevel` -- задаёт уровень журналирования для консоли (stdout/stderr).
+<.> `enableFileLogging` -- включает или отключает ведение журнала в файл.
+<.> `enableConsoleLogging` -- включает или отключает ведение журнала в консоль (stdout/stderr).
+<.> `jsonLayout` -- определяет JSON-структуру сообщений журнала.
+<.> `type` -- указывает на использование JSON-макета.
+<.> `includeAllProperties` -- регулирует, будут ли добавляться в вывод все дополнительные свойства, переданные в контексте журналирования.
+<.> `attributes` -- раздел с парными параметрами вида `"name"`/`"layout"`, определяющий поля JSON.
+<.> `name` -- значение `timestamp` добавляет отметку времени.
+<.> `layout` -- значение `$&#123;date:format=yyyy-MM-dd HH\\:mm\\:ss.fff&#125;` задаёт формат отображения времени.
+<.> `name` -- значение `dataBase` добавляет псевдоним базы данных.
+<.> `layout` -- значение `$&#123;gdc:dataBase&#125;` подставляет псевдоним базы данных из контекста журналирования.
+<.> `includeEmptyValue` -- значение `false` исключает поле `dataBase`, если псевдоним базы данных не задан.
+<.> `targets` -- настройки режимов журналирования.
+<.> `async` -- регулирует асинхронную обработку целей, указанных в этом блоке. Журналирование выполняется в фоновом режиме, не блокируя работу системы, что повышает производительность при высокой нагрузке.
+<.> `logFile` -- настройки для режима вывода журнала в файл.
+<.> `type` -- указывает на использование файла.
+<.> `fileName` -- формирует шаблон имени файла, в параметре можно использовать https://github.com/nlog/NLog/wiki/File-target[допустимые для NLog переменные].
+<.> `layout` -- ссылка на общий JSON-формат, определённый в `jsonLayout`.
+<.> `concurrentWrites` -- разрешает нескольким процессам одновременно записывать сообщения в один файл журнала.
+<.> `archiveEvery` -- создавать новый архивный файл каждый заданный период, по умолчанию -- каждый день.
+<.> `archiveAboveSize` -- если текущий файл превышает `300` Мб (значение по умолчанию), он будет немедленно архивирован, даже если заданный в `archiveEvery` период не завершился.
+<.> `archiveFileName` -- шаблон имени для архивов, `&#123;#&#125;` заменяется на номер архива.
+<.> `archiveNumbering` -- значение `DateAndSequence` задаёт нумерацию архивов по дате и порядковому номеру (например, `MyLog 2026-09-09 1.log`).
+<.> `archiveDateFormat` -- задаёт формат даты, которая подставляется в имя архивного файла при архивации журнала.
+<.> `maxArchiveFiles` -- максимальное количество архивных файлов, после которого старые файлы будут удаляться. По умолчанию -- `30`.
+<.> `createDirs` -- флаг регулирует автоматическое создание каталогов журналов. Каталоги будут создаваться автоматически, когда флаг в значении `true`.
+<.> `logConsole` -- настройки для режима вывода журнала в stdout/stderr процесса, например _journald_ в терминале Linux. Формат -- тот же JSON, что и для файла.
+<.> `rules` -- правила журналирования. Определяют, какой логгер (`logger`), с каким уровнем (`minLevel`, `maxLevel`) и в каком режиме (`writeTo`) будет писать сообщения.
++
+Допустимые уровни протоколирования приведены https://github.com/nlog/NLog/wiki/Configuration-file#log-levels[на странице NLog в GitHub]. +
+Для получения дополнительной информации о других настройках NLog обратитесь к документации по данной платформе.
++
+В именах файлов журналов и архивов Workflow переменная `$&#123;gdc:processBits&#125;` добавляет разрядность процесса: `32` или `64`.
 +
 По умолчанию файловое и консольное журналирование включены, для обоих используется уровень `Error`. Чтобы записывать также информационные сообщения, установите уровень `Info` для нужного канала вывода.
 +
+. Сохраните изменения конфигурационного файла.
 . Перезапустите службу Workflow.
-
-Для контейнеров отключите запись в файл: `enableFileLogging` -- `false`, `enableConsoleLogging` -- `true`. Сообщения будут выводиться в stdout контейнера.
 
 Настройки "Файл журнала" и "Уровень журналирования" удалены из разметки {of-mc}. Для новой конфигурации используйте секцию `NLog`.
 
