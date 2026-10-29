@@ -20,6 +20,7 @@ include::6.1@webclient:admin:partial$excerpts.adoc[tags=no-rights]
 . Измените параметры журналирования в секции `NLog`:
 +
 .Фрагмент конфигурационного файла модуля:
+// tag::workflow-nlog[]
 [source,json]
 ----
 {
@@ -144,6 +145,7 @@ include::6.1@webclient:admin:partial$excerpts.adoc[tags=no-rights]
 +
 Допустимые уровни протоколирования приведены https://github.com/nlog/NLog/wiki/Configuration-file#log-levels[на странице NLog в GitHub]. +
 Для получения дополнительной информации о других настройках NLog обратитесь к документации по данной платформе.
+// end::workflow-nlog[]
 +
 . Сохраните изменения конфигурационного файла.
 . Перезапустите службу Workflow.
